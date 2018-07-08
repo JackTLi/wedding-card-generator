@@ -1,4 +1,5 @@
 require 'pry'
+require 'benchmark'
 require 'csv'
 
 def css
@@ -8,53 +9,63 @@ def css
 
   "
   body {
-    display: flex;
-    flex-wrap: wrap;
+    background-color: white;
+    color: #454f5b;
   }
 
   .individual {
+    display: inline-block;
     width: #{width_in_inches * dpi};
     height: #{height_in_inches * dpi};
   }
 
   .empty_top_half {
     height: #{height_in_inches * dpi / 2};
-    border: 1px solid black;
+    border: 1px solid #eee;
   }
 
   .bottom_half {
     width: 100%;
     height: #{height_in_inches * dpi / 2};
     position: relative;
-    border: 1px solid black;
+    border: 1px solid #eee;
   }
 
   .bottom_content {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 25%;
     width: 100%;
   }
 
   .table_number {
     font-family: SF Pro Display;
-    margin-bottom: 25px;
     text-align: center;
-    font-size: 30px;
-    letter-spacing: 4px;
+    font-size: 40px;
+    letter-spacing: 8px;
   }
 
   .guest_name {
     font-family: Sweet Pea;
-    font-size: 120px;
+    font-size: 110px;
     text-align: center;
+    margin-top: 45px;
+    margin-bottom: 45px;
+  }
+
+  .flower {
+  }
+
+  .flower img {
+    width: 300px;
+    margin: auto;
+    display: block;
   }
   "
 end
 
 def individual_html(name, table)
   table = "Table #{table}" unless table == "Headtable"
-
+  table.upcase!
   "
     <div class ='individual'>
       <div class='empty_top_half'></div>
@@ -63,7 +74,7 @@ def individual_html(name, table)
           <div class='table_number'>#{table}</div>
           <div class='guest_name'>#{name}</div>
           <div class='flower'>
-            <img src=""/>
+            <img src='flower.svg'/>
           </div>
         </div>
       </div>
@@ -80,13 +91,24 @@ def create_card_sheets(guests, sheet)
     code += individual_html(name, table)
   end
   code += "</body>"
-  write_code_to_file("cards_#{sheet}.html", code)
+
+  file_name = "cards_#{sheet}"
+  write_code_to_file("#{file_name}.html", code)
+  screenshot(`phantomjs screengrab.js #{file_name}.html pngs/#{file_name}.png`, "pngs/#{file_name}.png")
 end
 
 def write_code_to_file(filename, code)
   open(filename, 'w') { |f|
     f.puts code
   }
+end
+
+def screenshot(command, png_path)
+  puts "Benchmark: #{png_path}"
+  Benchmark.bm do |x|
+    x.report { command } unless ARGV[1] == "skip"
+  end
+  puts "Done phantomjs for #{png_path}"
 end
 
 sheet_count = 0
